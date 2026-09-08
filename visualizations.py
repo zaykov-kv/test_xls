@@ -9,7 +9,7 @@ from elixhauser import ELIXHAUSER_MAPPINGS
 from utils import create_comorbidity_heatmap, get_top_diseases, get_top_comorbidity_pairs
 from analysis import get_file_summary, get_comparison_stats
 from icd_api import get_icd10_code_details
-from database_supabase import SupabaseManager
+from database_supabase import SupabaseManager  # <--- ИСПРАВЛЕНО
 
 
 def render_file_info(all_results):
@@ -280,7 +280,7 @@ def render_sidebar_filters(combined_df, all_results):
     if risk_filter:
         filtered_df = filtered_df[filtered_df['Charlson Risk'].isin(risk_filter)]
     
-    # --- ФИЛЬТР ПО ЗОНЕ РИСКА ELIXHAUSER (ВОЗВРАЩАЕМ) ---
+    # --- ФИЛЬТР ПО ЗОНЕ РИСКА ELIXHAUSER ---
     risk_filter_elix = st.sidebar.multiselect(
         "Зона риска Elixhauser",
         options=['🟢 Низкий', '🟡 Средний', '🟠 Высокий', '🔴 Очень высокий'],
@@ -617,6 +617,7 @@ def render_standard_charts(filtered_df):
         else:
             st.info("Нет данных о сочетаемости заболеваний")
 
+
 def render_code_validation(all_results):
     """
     Поиск информации о конкретном коде МКБ-10 через API.
@@ -676,72 +677,6 @@ def render_code_validation(all_results):
                 if st.button(f"📋 {code}", key=f"common_{code}"):
                     st.session_state.icd_code_search = code
                     st.rerun()
-
-
-def render_code_validation(all_results):
-    """
-    Поиск информации о конкретном коде МКБ-10 через API.
-    """
-    with st.expander("🔍 Проверка кода МКБ-10", expanded=False):
-        st.markdown("**Поиск информации о коде МКБ-10**")
-        st.caption("💡 Введите код для проверки (например, E11.9, I10, C50)")
-        
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            icd_code = st.text_input(
-                "Введите код МКБ-10:",
-                placeholder="Например: E11.9, I10, C50",
-                key="icd_code_search"
-            )
-        
-        with col2:
-            search_btn = st.button("🔍 Найти код", use_container_width=True, type="primary")
-        
-        if search_btn and icd_code:
-            # Импортируем только нужную функцию
-            from icd_api import get_icd10_code_details
-            
-            with st.spinner("⏳ Поиск кода..."):
-                code_clean = icd_code.strip().upper()
-                details = get_icd10_code_details(code_clean)
-                
-                if details:
-                    st.success(f"✅ Код **{code_clean}** найден")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.metric("📋 Код", details.get("code", code_clean))
-                    with col2:
-                        st.metric("📝 Статус", "✅ Корректен")
-                    
-                    st.info(f"**Описание:** {details.get('description', 'Описание не найдено')}")
-                else:
-                    st.warning(f"❌ Код **{code_clean}** не найден. Проверьте правильность ввода.")
-        
-        # Быстрый доступ к часто используемым кодам
-        st.markdown("---")
-        st.markdown("**📌 Часто используемые коды:**")
-        
-        common_codes = [
-            ("E11.9", "Сахарный диабет 2 типа без осложнений"),
-            ("I10", "Эссенциальная гипертензия"),
-            ("I50", "Сердечная недостаточность"),
-            ("J44", "Хроническая обструктивная болезнь легких"),
-            ("C50", "Злокачественное новообразование молочной железы"),
-            ("N18", "Хроническая почечная недостаточность"),
-            ("F10", "Алкоголизм"),
-            ("E66", "Ожирение")
-        ]
-        
-        cols = st.columns(4)
-        for idx, (code, desc) in enumerate(common_codes):
-            with cols[idx % 4]:
-                if st.button(f"📋 {code}", key=f"common_{code}"):
-                    st.session_state.icd_code_search = code
-                    st.rerun()
-
-from database import DatabaseManager
 
 
 def render_database_interface():
@@ -798,7 +733,8 @@ def render_database_interface():
                                     st.error(f"❌ Ошибка при сохранении: {str(e)}")
                     
                     st.info(f"📊 Будет сохранено {len(combined_df)} пациентов")
-        # Вкладка 2: Загрузка
+        
+        # --- Вкладка 2: Загрузка ---
         with tab2:
             st.markdown("**Загрузить ранее сохранённые данные**")
             
@@ -810,6 +746,7 @@ def render_database_interface():
                 st.info("💡 Сначала сохраните данные через вкладку 'Сохранить текущие данные'")
             else:
                 st.success(f"✅ Найдено {len(sessions)} сессий")
+                
                 # Показываем список сессий
                 session_options = {
                     f"{row['session_id']} - {row['file_name']} ({row['created_at'][:16]})": row['session_id']
@@ -857,6 +794,74 @@ def render_database_interface():
                         use_container_width=True,
                         hide_index=True
                     )
+        
+        # --- Вкладка 3: История сессий (ИСПРАВЛЕНА) ---
+        with tab3:
+            st.markdown("**📊 История сессий**")
+            
+            limit = st.slider("Количество сессий для отображения:", 5, 100, 20, key="history_limit")
+            sessions = db.get_sessions(limit=limit)
+            
+            if sessions.empty:
+                st.info("Нет сохранённых сессий")
+            else:
+                st.dataframe(
+                    sessions,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "session_id": "ID",
+                        "created_at": "Дата создания",
+                        "file_name": "Название",
+                        "total_patients": "Пациентов",
+                        "avg_charlson": "Ср. Charlson"
+                    }
+                )
+                
+                st.markdown("---")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Всего сессий", len(sessions))
+                with col2:
+                    st.metric("Всего пациентов", sessions['total_patients'].sum())
+                with col3:
+                    st.metric("Ср. пациентов на сессию", f"{sessions['total_patients'].mean():.1f}")
+        
+        # --- Вкладка 4: Поиск пациентов ---        with tab4:
+            st.markdown("**🔍 Поиск пациентов**")
+            st.caption("💡 Поиск по ID пациента, кодам МКБ-10 или другим данным")
+            
+            search_term = st.text_input(
+                "Введите текст для поиска:",
+                placeholder="Например: E11.9, 001, диабет",
+                key="db_search_term"
+            )
+            
+            if search_term:
+                with st.spinner("⏳ Поиск..."):
+                    results = db.search_patients(search_term)
+                    
+                    if results.empty:
+                        st.info("Ничего не найдено")
+                    else:
+                        st.success(f"Найдено {len(results)} записей")
+                        st.dataframe(
+                            results,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                "patient_id_text": "ID пациента",
+                                "source_file": "Файл",
+                                "icd_codes": "Коды МКБ-10",
+                                "updated_charlson": "Charlson",
+                                "charlson_risk": "Риск C",
+                                "van_walraven_elixhauser": "Elixhauser",
+                                "elixhauser_risk": "Риск E",
+                                "session_name": "Сессия",
+                                "session_date": "Дата"
+                            }
+                        )
+
 
 def render_loaded_data():
     """
