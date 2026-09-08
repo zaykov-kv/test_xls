@@ -49,30 +49,21 @@ with st.sidebar:
 if st.session_state.theme == 'dark':
     st.markdown("""
     <style>
-        /* Основной фон */
         .stApp {
             background-color: #0e1117;
             color: #fafafa;
         }
-        
-        /* Карточки и блоки */
         .st-emotion-cache-1r6slb0, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3 {
             background-color: #1e1e2e !important;
             border-radius: 10px;
             padding: 10px;
         }
-        
-        /* Заголовки */
         h1, h2, h3, h4, h5, h6 {
             color: #fafafa !important;
         }
-        
-        /* Текст */
         p, li, label, .stMarkdown {
             color: #d4d4d4 !important;
         }
-        
-        /* Метрики */
         .stMetric {
             background-color: #1e1e2e !important;
             border-radius: 10px;
@@ -84,13 +75,9 @@ if st.session_state.theme == 'dark':
         .stMetric .stMetricValue {
             color: #fafafa !important;
         }
-        
-        /* Таблицы */
         .stDataFrame {
             background-color: #1e1e2e !important;
         }
-        
-        /* Кнопки */
         .stButton button {
             background-color: #2d2d44 !important;
             color: #fafafa !important;
@@ -100,23 +87,17 @@ if st.session_state.theme == 'dark':
             background-color: #3d3d5c !important;
             border-color: #666 !important;
         }
-        
-        /* Поля ввода */
         .stTextInput input, .stTextArea textarea, .stSelectbox select {
             background-color: #1e1e2e !important;
             color: #fafafa !important;
             border-color: #444 !important;
         }
-        
-        /* Боковая панель */
         .stSidebar {
             background-color: #16161f !important;
         }
         .stSidebar h1, .stSidebar h2, .stSidebar h3 {
             color: #fafafa !important;
         }
-        
-        /* Вкладки */
         .stTabs [data-baseweb="tab-list"] {
             background-color: #1e1e2e !important;
         }
@@ -127,8 +108,6 @@ if st.session_state.theme == 'dark':
             color: #fafafa !important;
             background-color: #2d2d44 !important;
         }
-        
-        /* Expanders */
         .stExpander {
             background-color: #1e1e2e !important;
             border-radius: 10px !important;
@@ -137,28 +116,20 @@ if st.session_state.theme == 'dark':
         .stExpander summary {
             color: #fafafa !important;
         }
-        
-        /* Загрузчик файлов */
         .stFileUploader {
             background-color: #1e1e2e !important;
             border-color: #444 !important;
         }
-        
-        /* Информационные блоки */
         .stAlert {
             background-color: #1e1e2e !important;
             border-color: #444 !important;
         }
-        
-        /* Элементы Plotly графиков */
         .js-plotly-plot .plotly .main-svg {
             background-color: #1e1e2e !important;
         }
         .js-plotly-plot .plotly .cartesianlayer {
             background-color: #1e1e2e !important;
         }
-        
-        /* Scrollbar */
         ::-webkit-scrollbar {
             background-color: #1e1e2e;
             width: 8px;
@@ -167,21 +138,16 @@ if st.session_state.theme == 'dark':
             background-color: #444;
             border-radius: 4px;
         }
-        
-        /* Выпадающие списки */
         .stSelectbox div[data-baseweb="select"] {
             background-color: #1e1e2e !important;
             color: #fafafa !important;
         }
-        
-        /* Слайдеры */
         .stSlider {
             color: #fafafa !important;
         }
     </style>
     """, unsafe_allow_html=True)
 else:
-    # Светлая тема (стандартная) — убираем тёмные стили
     st.markdown("""
     <style>
         .stApp {
@@ -268,7 +234,31 @@ has_data = (
 if has_data:
     data_source = st.session_state.data_source
     
+    # --- ПРИВОДИМ КОЛОНКИ К ЕДИНОМУ ФОРМАТУ ---
     if data_source == 'database':
+        # Переименовываем колонки из базы данных в формат приложения
+        rename_map = {}
+        df = st.session_state.combined_df
+        
+        if 'patient_id_text' in df.columns and 'Patient_ID' not in df.columns:
+            rename_map['patient_id_text'] = 'Patient_ID'
+        if 'source_file' in df.columns and 'Source_File' not in df.columns:
+            rename_map['source_file'] = 'Source_File'
+        if 'icd_codes' in df.columns and 'ICD_codes' not in df.columns:
+            rename_map['icd_codes'] = 'ICD_codes'
+        if 'charlson_risk' in df.columns and 'Charlson Risk' not in df.columns:
+            rename_map['charlson_risk'] = 'Charlson Risk'
+        if 'elixhauser_risk' in df.columns and 'Elixhauser Risk' not in df.columns:
+            rename_map['elixhauser_risk'] = 'Elixhauser Risk'
+        if 'updated_charlson' in df.columns and 'Updated Charlson' not in df.columns:
+            rename_map['updated_charlson'] = 'Updated Charlson'
+        if 'van_walraven_elixhauser' in df.columns and 'van Walraven Elixhauser' not in df.columns:
+            rename_map['van_walraven_elixhauser'] = 'van Walraven Elixhauser'
+        
+        if rename_map:
+            st.session_state.combined_df = df.rename(columns=rename_map)
+            st.info(f"🔄 Переименовано {len(rename_map)} колонок из формата базы данных")
+        
         st.info("📊 **Отображение данных из базы данных**")
         st.caption(f"Загружено {len(st.session_state.combined_df)} записей из базы данных")
         

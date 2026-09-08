@@ -20,7 +20,7 @@ def get_supabase_config():
     # Если URL пустой, пробуем стандартный
     if not url:
         url = "https://your-project.supabase.co"
-        st.warning("⚠️ SUPABASE_URL не найден в секретах. Используется значение по умolчанию.")
+        st.warning("⚠️ SUPABASE_URL не найден в секретах. Используется значение по умолчанию.")
     
     if not key:
         key = "your-anon-key"
@@ -64,7 +64,7 @@ class SupabaseManager:
         try:
             self.client: Client = create_client(url, key)
             self.connected = True
-            #st.success("✅ Подключение к Supabase установлено")
+            # st.success("✅ Подключение к Supabase установлено")
         except Exception as e:
             st.error(f"❌ Ошибка подключения к Supabase: {str(e)}")
             self.client = None
@@ -227,32 +227,62 @@ class SupabaseManager:
     def search_patients(self, search_term: str) -> pd.DataFrame:
         """Поиск пациентов по ID или кодам МКБ-10."""
         if self.client is None:
+            st.warning("⚠️ Нет подключения к Supabase")
+            return pd.DataFrame()
+        
+        if not search_term or len(search_term.strip()) < 2:
+            st.info("💡 Введите минимум 2 символа для поиска")
             return pd.DataFrame()
         
         try:
+            search_pattern = f"%{search_term.strip()}%"
+            
+            # Пробуем через or_ с ilike
             result = self.client.table('patients')\
                 .select('patient_id, source_file, patient_id_text, icd_codes, updated_charlson, charlson_risk, van_walraven_elixhauser, elixhauser_risk, created_at, session_id')\
-                .or_(f"patient_id_text.ilike.%{search_term}%, icd_codes.ilike.%{search_term}%")\
+                .or_(f"patient_id_text.ilike.{search_pattern}, icd_codes.ilike.{search_pattern}")\
                 .limit(100)\
                 .execute()
             
+            # Если ничего не найдено, пробуем через текстовый поиск
+            if not result.data:
+                result = self.client.table('patients')\
+                    .select('patient_id, source_file, patient_id_text, icd_codes, updated_charlson, charlson_risk, van_walraven_elixhauser, elixhauser_risk, created_at, session_id')\
+                    .text_search('patient_id_text', search_term.strip())\
+                    .limit(100)\
+                    .execute()
+            
+            # Если всё ещё пусто, пробуем точное совпадение
+            if not result.data:
+                result = self.client.table('patients')\
+                    .select('patient_id, source_file, patient_id_text, icd_codes, updated_charlson, charlson_risk, van_walraven_elixhauser, elixhauser_risk, created_at, session_id')\
+                    .eq('patient_id_text', search_term.strip())\
+                    .limit(100)\
+                    .execute()
+            
+            # Если данные найдены, обрабатываем
             if result.data:
                 df = pd.DataFrame(result.data)
-                if not df.empty:
-                    session_ids = df['session_id'].unique()
-                    sessions = self.client.table('sessions')\
-                        .select('session_id, file_name, created_at')\
-                        .in_('session_id', session_ids.tolist())\
-                        .execute()
-                    
-                    if sessions.data:
-                        sessions_df = pd.DataFrame(sessions.data)
-                        df = df.merge(sessions_df, on='session_id', how='left')
-                        df = df.rename(columns={
-                            'file_name': 'session_name',
-                            'created_at_y': 'session_date'
-                        })
+                
+                # Получаем информацию о сессиях
+                if not df.empty and 'session_id' in df.columns:
+                    session_ids = df['session_id'].unique().tolist()
+                    if session_ids:
+                        sessions = self.client.table('sessions')\
+                            .select('session_id, file_name, created_at')\
+                            .in_('session_id', session_ids)\
+                            .execute()
+                        
+                        if sessions.data:
+                            sessions_df = pd.DataFrame(sessions.data)
+                            df = df.merge(sessions_df, on='session_id', how='left')
+                            df = df.rename(columns={
+                                'file_name': 'session_name',
+                                'created_at_y': 'session_date'
+                            })
+                
                 return df
+            
             return pd.DataFrame()
             
         except Exception as e:
