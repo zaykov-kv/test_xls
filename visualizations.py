@@ -810,7 +810,6 @@ def render_database_interface():
                 st.info("💡 Сначала сохраните данные через вкладку 'Сохранить текущие данные'")
             else:
                 st.success(f"✅ Найдено {len(sessions)} сессий")
-                st.rerun()
                 # Показываем список сессий
                 session_options = {
                     f"{row['session_id']} - {row['file_name']} ({row['created_at'][:16]})": row['session_id']
