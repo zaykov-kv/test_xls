@@ -47,111 +47,44 @@ with st.sidebar:
 if st.session_state.theme == 'dark':
     st.markdown("""
     <style>
-        .stApp {
-            background-color: #0e1117;
-            color: #fafafa;
-        }
+        .stApp { background-color: #0e1117; color: #fafafa; }
         .st-emotion-cache-1r6slb0, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3 {
             background-color: #1e1e2e !important;
             border-radius: 10px;
             padding: 10px;
         }
-        h1, h2, h3, h4, h5, h6 {
-            color: #fafafa !important;
-        }
-        p, li, label, .stMarkdown {
-            color: #d4d4d4 !important;
-        }
-        .stMetric {
-            background-color: #1e1e2e !important;
-            border-radius: 10px;
-            padding: 15px;
-        }
-        .stMetric label {
-            color: #aaa !important;
-        }
-        .stMetric .stMetricValue {
-            color: #fafafa !important;
-        }
-        .stDataFrame {
-            background-color: #1e1e2e !important;
-        }
-        .stButton button {
-            background-color: #2d2d44 !important;
-            color: #fafafa !important;
-            border: 1px solid #444 !important;
-        }
-        .stButton button:hover {
-            background-color: #3d3d5c !important;
-            border-color: #666 !important;
-        }
+        h1, h2, h3, h4, h5, h6 { color: #fafafa !important; }
+        p, li, label, .stMarkdown { color: #d4d4d4 !important; }
+        .stMetric { background-color: #1e1e2e !important; border-radius: 10px; padding: 15px; }
+        .stMetric label { color: #aaa !important; }
+        .stMetric .stMetricValue { color: #fafafa !important; }
+        .stDataFrame { background-color: #1e1e2e !important; }
+        .stButton button { background-color: #2d2d44 !important; color: #fafafa !important; border: 1px solid #444 !important; }
+        .stButton button:hover { background-color: #3d3d5c !important; border-color: #666 !important; }
         .stTextInput input, .stTextArea textarea, .stSelectbox select {
-            background-color: #1e1e2e !important;
-            color: #fafafa !important;
-            border-color: #444 !important;
+            background-color: #1e1e2e !important; color: #fafafa !important; border-color: #444 !important;
         }
-        .stSidebar {
-            background-color: #16161f !important;
-        }
-        .stSidebar h1, .stSidebar h2, .stSidebar h3 {
-            color: #fafafa !important;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #1e1e2e !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #aaa !important;
-        }
-        .stTabs [data-baseweb="tab"][aria-selected="true"] {
-            color: #fafafa !important;
-            background-color: #2d2d44 !important;
-        }
-        .stExpander {
-            background-color: #1e1e2e !important;
-            border-radius: 10px !important;
-            border-color: #333 !important;
-        }
-        .stExpander summary {
-            color: #fafafa !important;
-        }
-        .stFileUploader {
-            background-color: #1e1e2e !important;
-            border-color: #444 !important;
-        }
-        .stAlert {
-            background-color: #1e1e2e !important;
-            border-color: #444 !important;
-        }
-        .js-plotly-plot .plotly .main-svg {
-            background-color: #1e1e2e !important;
-        }
-        .js-plotly-plot .plotly .cartesianlayer {
-            background-color: #1e1e2e !important;
-        }
-        ::-webkit-scrollbar {
-            background-color: #1e1e2e;
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background-color: #444;
-            border-radius: 4px;
-        }
-        .stSelectbox div[data-baseweb="select"] {
-            background-color: #1e1e2e !important;
-            color: #fafafa !important;
-        }
-        .stSlider {
-            color: #fafafa !important;
-        }
+        .stSidebar { background-color: #16161f !important; }
+        .stSidebar h1, .stSidebar h2, .stSidebar h3 { color: #fafafa !important; }
+        .stTabs [data-baseweb="tab-list"] { background-color: #1e1e2e !important; }
+        .stTabs [data-baseweb="tab"] { color: #aaa !important; }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #fafafa !important; background-color: #2d2d44 !important; }
+        .stExpander { background-color: #1e1e2e !important; border-radius: 10px !important; border-color: #333 !important; }
+        .stExpander summary { color: #fafafa !important; }
+        .stFileUploader { background-color: #1e1e2e !important; border-color: #444 !important; }
+        .stAlert { background-color: #1e1e2e !important; border-color: #444 !important; }
+        .js-plotly-plot .plotly .main-svg { background-color: #1e1e2e !important; }
+        .js-plotly-plot .plotly .cartesianlayer { background-color: #1e1e2e !important; }
+        ::-webkit-scrollbar { background-color: #1e1e2e; width: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #444; border-radius: 4px; }
+        .stSelectbox div[data-baseweb="select"] { background-color: #1e1e2e !important; color: #fafafa !important; }
+        .stSlider { color: #fafafa !important; }
     </style>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <style>
-        .stApp {
-            background-color: #ffffff;
-            color: #262730;
-        }
+        .stApp { background-color: #ffffff; color: #262730; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -178,6 +111,14 @@ if 'data_source' not in st.session_state:
 # =============================================================================
 
 render_database_interface()
+
+
+# =============================================================================
+# ПРОВЕРКА КОДОВ МКБ-10 (ВСЕГДА ДОСТУПНА)  ← ПЕРЕМЕЩЕНО СЮДА
+# =============================================================================
+
+st.markdown("---")
+render_code_validation({})
 
 
 # =============================================================================
@@ -234,7 +175,6 @@ if has_data:
     
     # --- ПРИВОДИМ КОЛОНКИ К ЕДИНОМУ ФОРМАТУ ---
     if data_source == 'database':
-        # Переименовываем колонки из базы данных в формат приложения
         rename_map = {}
         df = st.session_state.combined_df
         
@@ -268,7 +208,8 @@ if has_data:
     if data_source == 'file':
         render_file_info(st.session_state.all_results)
     
-    render_code_validation(st.session_state.all_results)
+    # Проверка кодов МКБ-10 (для загруженных данных)
+    render_code_validation(st.session_state.all_results)  # ← ОСТАВЛЯЕМ ДЛЯ РАБОТЫ С ДАННЫМИ
     
     st.session_state.combined_df = render_raw_data(
         st.session_state.all_results, 
