@@ -28,6 +28,169 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- ТЁМНАЯ ТЕМА ---
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'light'
+
+# Переключатель в боковой панели
+with st.sidebar:
+    theme_toggle = st.toggle(
+        "🌙 Тёмная тема", 
+        value=(st.session_state.theme == 'dark'),
+        help="Переключить между светлой и тёмной темой"
+    )
+    
+    if theme_toggle:
+        st.session_state.theme = 'dark'
+    else:
+        st.session_state.theme = 'light'
+
+# Применяем CSS для тёмной темы
+if st.session_state.theme == 'dark':
+    st.markdown("""
+    <style>
+        /* Основной фон */
+        .stApp {
+            background-color: #0e1117;
+            color: #fafafa;
+        }
+        
+        /* Карточки и блоки */
+        .st-emotion-cache-1r6slb0, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3 {
+            background-color: #1e1e2e !important;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        /* Заголовки */
+        h1, h2, h3, h4, h5, h6 {
+            color: #fafafa !important;
+        }
+        
+        /* Текст */
+        p, li, label, .stMarkdown {
+            color: #d4d4d4 !important;
+        }
+        
+        /* Метрики */
+        .stMetric {
+            background-color: #1e1e2e !important;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .stMetric label {
+            color: #aaa !important;
+        }
+        .stMetric .stMetricValue {
+            color: #fafafa !important;
+        }
+        
+        /* Таблицы */
+        .stDataFrame {
+            background-color: #1e1e2e !important;
+        }
+        
+        /* Кнопки */
+        .stButton button {
+            background-color: #2d2d44 !important;
+            color: #fafafa !important;
+            border: 1px solid #444 !important;
+        }
+        .stButton button:hover {
+            background-color: #3d3d5c !important;
+            border-color: #666 !important;
+        }
+        
+        /* Поля ввода */
+        .stTextInput input, .stTextArea textarea, .stSelectbox select {
+            background-color: #1e1e2e !important;
+            color: #fafafa !important;
+            border-color: #444 !important;
+        }
+        
+        /* Боковая панель */
+        .stSidebar {
+            background-color: #16161f !important;
+        }
+        .stSidebar h1, .stSidebar h2, .stSidebar h3 {
+            color: #fafafa !important;
+        }
+        
+        /* Вкладки */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #1e1e2e !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #aaa !important;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            color: #fafafa !important;
+            background-color: #2d2d44 !important;
+        }
+        
+        /* Expanders */
+        .stExpander {
+            background-color: #1e1e2e !important;
+            border-radius: 10px !important;
+            border-color: #333 !important;
+        }
+        .stExpander summary {
+            color: #fafafa !important;
+        }
+        
+        /* Загрузчик файлов */
+        .stFileUploader {
+            background-color: #1e1e2e !important;
+            border-color: #444 !important;
+        }
+        
+        /* Информационные блоки */
+        .stAlert {
+            background-color: #1e1e2e !important;
+            border-color: #444 !important;
+        }
+        
+        /* Элементы Plotly графиков */
+        .js-plotly-plot .plotly .main-svg {
+            background-color: #1e1e2e !important;
+        }
+        .js-plotly-plot .plotly .cartesianlayer {
+            background-color: #1e1e2e !important;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            background-color: #1e1e2e;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #444;
+            border-radius: 4px;
+        }
+        
+        /* Выпадающие списки */
+        .stSelectbox div[data-baseweb="select"] {
+            background-color: #1e1e2e !important;
+            color: #fafafa !important;
+        }
+        
+        /* Слайдеры */
+        .stSlider {
+            color: #fafafa !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    # Светлая тема (стандартная) — убираем тёмные стили
+    st.markdown("""
+    <style>
+        .stApp {
+            background-color: #ffffff;
+            color: #262730;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("🏥 Калькулятор индексов Charlson и Elixhauser")
 st.markdown("---")
 
