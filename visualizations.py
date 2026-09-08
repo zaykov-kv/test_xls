@@ -4,12 +4,57 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+import zoneinfo  # Встроен в Python 3.9+
 from charlson import CHARLSON_MAPPINGS
 from elixhauser import ELIXHAUSER_MAPPINGS
 from utils import create_comorbidity_heatmap, get_top_diseases, get_top_comorbidity_pairs
 from analysis import get_file_summary, get_comparison_stats
 from icd_api import get_icd10_code_details
-from database_supabase import SupabaseManager  # <--- ИСПРАВЛЕНО
+from database_supabase import SupabaseManager
+
+
+def get_local_timezone():
+    """
+    Определяет локальный часовой пояс компьютера.
+    """
+    try:
+        # Пытаемся получить локальный часовой пояс
+        local_tz = datetime.now().astimezone().tzinfo
+        if local_tz:
+            return local_tz
+    except:
+        pass
+    
+    # Если не получилось, пробуем через zoneinfo
+    try:
+        return zoneinfo.ZoneInfo('localtime')
+    except:
+        pass
+    
+    # Если ничего не работает, используем UTC
+    return zoneinfo.ZoneInfo('UTC')
+
+
+def format_datetime(dt):
+    """Преобразует datetime в локальный часовой пояс и форматирует."""
+    if dt is None:
+        return ""
+    try:
+        if isinstance(dt, str):
+            dt = pd.to_datetime(dt)
+        
+        # Получаем локальный часовой пояс
+        local_tz = get_local_timezone()
+        
+        # Если у времени нет часового пояса, добавляем UTC
+        if dt.tzinfo is None:
+            dt = dt.tz_localize('UTC')
+        
+        # Конвертируем в локальный часовой пояс
+        dt_local = dt.tz_convert(local_tz)
+        return dt_local.strftime('%d.%m.%Y %H:%M')
+    except:
+        return str(dt)
 
 
 def render_file_info(all_results):
@@ -735,6 +780,7 @@ def render_database_interface():
                     st.info(f"📊 Будет сохранено {len(combined_df)} пациентов")
         
         # --- Вкладка 2: Загрузка ---
+        # --- Вкладка 2: Загрузка ---
         with tab2:
             st.markdown("**Загрузить ранее сохранённые данные**")
             
@@ -745,19 +791,25 @@ def render_database_interface():
                 st.warning("Нет сохранённых сессий в базе данных")
                 st.info("💡 Сначала сохраните данные через вкладку 'Сохранить текущие данные'")
             else:
-                st.success(f"✅ Найдено {len(sessions)} сессий")
+                #st.success(f"✅ Найдено {len(sessions)} сессий")
+                
+                # Преобразуем время в локальный часовой пояс для отображения
+                if 'created_at' in sessions.columns:
+                    sessions['created_at_display'] = sessions['created_at'].apply(format_datetime)
+                    sessions['created_at_display'] = sessions['created_at'].apply(format_datetime)
                 
                 # Показываем список сессий
-                session_options = {
-                    f"{row['session_id']} - {row['file_name']} ({row['created_at'][:16]})": row['session_id']
-                    for _, row in sessions.iterrows()
-                }
+                session_options = {}
+                for _, row in sessions.iterrows():
+                    display_name = f"{row['session_id']} - {row['file_name']} ({row.get('created_at_display', row.get('created_at', ''))})"
+                    session_options[display_name] = row['session_id']
                 
                 selected_session = st.selectbox(
                     "Выберите сессию для загрузки:",
                     options=list(session_options.keys()),
                     key="load_session_select"
                 )
+                
                 
                 if selected_session:
                     session_id = session_options[selected_session]
@@ -796,6 +848,7 @@ def render_database_interface():
                     )
         
         # --- Вкладка 3: История сессий (ИСПРАВЛЕНА) ---
+        # --- Вкладка 3: История сессий ---
         with tab3:
             st.markdown("**📊 История сессий**")
             
@@ -805,13 +858,17 @@ def render_database_interface():
             if sessions.empty:
                 st.info("Нет сохранённых сессий")
             else:
+                # Преобразуем время в локальный часовой пояс
+                if 'created_at' in sessions.columns:
+                    sessions['created_at_display'] = sessions['created_at'].apply(format_datetime)
+                
                 st.dataframe(
                     sessions,
                     use_container_width=True,
                     hide_index=True,
                     column_config={
                         "session_id": "ID",
-                        "created_at": "Дата создания",
+                        "created_at_display": "Дата создания",
                         "file_name": "Название",
                         "total_patients": "Пациентов",
                         "avg_charlson": "Ср. Charlson"

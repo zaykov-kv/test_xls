@@ -1,1 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Файлы с секретами
 .streamlit/secrets.toml
+
+# База данных
+*.db
+
+# Виртуальное окружение
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/

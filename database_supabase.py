@@ -5,14 +5,32 @@ import json
 from typing import Optional, List, Dict
 from supabase import create_client, Client
 import io
+import socket
 
 # --- ПОДКЛЮЧЕНИЕ К SUPABASE ---
-try:
-    SUPABASE_URL = st.secrets.get("SUPABASE_URL", "https://your-project.supabase.co")
-    SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "your-anon-key")
-except:
-    SUPABASE_URL = "https://your-project.supabase.co"
-    SUPABASE_KEY = "your-anon-key"
+def get_supabase_config():
+    """Получает конфигурацию Supabase из секретов с диагностикой."""
+    try:
+        url = st.secrets.get("SUPABASE_URL", "").strip()
+        key = st.secrets.get("SUPABASE_KEY", "").strip()
+    except:
+        url = ""
+        key = ""
+    
+    # Если URL пустой, пробуем стандартный
+    if not url:
+        url = "https://your-project.supabase.co"
+        st.warning("⚠️ SUPABASE_URL не найден в секретах. Используется значение по умolчанию.")
+    
+    if not key:
+        key = "your-anon-key"
+        st.warning("⚠️ SUPABASE_KEY не найден в секретах. Используется значение по умолчанию.")
+    
+    # Добавляем https:// если нужно
+    if url and not url.startswith("https://") and not url.startswith("http://"):
+        url = "https://" + url
+    
+    return url, key
 
 
 class SupabaseManager:
@@ -21,8 +39,32 @@ class SupabaseManager:
     """
     
     def __init__(self):
+        self.client = None
+        self.connected = False
+        
+        # Получаем конфигурацию
+        url, key = get_supabase_config()
+        
+        if not url or not key:
+            st.error("❌ Секреты Supabase не найдены. Проверьте файл .streamlit/secrets.toml")
+            return
+        
+        # Проверяем доступность хоста
         try:
-            self.client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            host = url.replace("https://", "").replace("http://", "").split("/")[0]
+            socket.gethostbyname(host)
+        except socket.gaierror as e:
+            st.error(f"❌ Не удалось найти хост {host}. Проверьте подключение к интернету.")
+            return
+        except Exception as e:
+            st.error(f"❌ Ошибка при проверке хоста: {str(e)}")
+            return
+        
+        # Подключаемся к Supabase
+        try:
+            self.client: Client = create_client(url, key)
+            self.connected = True
+            #st.success("✅ Подключение к Supabase установлено")
         except Exception as e:
             st.error(f"❌ Ошибка подключения к Supabase: {str(e)}")
             self.client = None
@@ -89,6 +131,7 @@ class SupabaseManager:
         Возвращает список сохранённых сессий.
         """
         if self.client is None:
+            st.warning("⚠️ Нет подключения к Supabase")
             return pd.DataFrame()
         
         try:
@@ -111,6 +154,7 @@ class SupabaseManager:
         Возвращает данные конкретной сессии с приведением типов.
         """
         if self.client is None:
+            st.warning("⚠️ Нет подключения к Supabase")
             return None
         
         try:
