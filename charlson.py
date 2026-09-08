@@ -22,64 +22,10 @@ CHARLSON_MAPPINGS: Dict[str, List[str]] = {
     'AIDS/HIV': ['B20', 'B21', 'B22', 'B24']
 }
 
-# --- ВЕСА ДЛЯ CHARLSON ---
-CHARLSON_WEIGHTS = {
-    'Original': {
-        'Myocardial infarction': 1,
-        'Congestive heart failure': 1,
-        'Peripheral vascular disease': 1,
-        'Cerebrovascular disease': 1,
-        'Dementia': 1,
-        'Chronic pulmonary disease': 1,
-        'Rheumatic disease': 1,
-        'Peptic ulcer disease': 1,
-        'Mild liver disease': 1,
-        'Diabetes without complications': 1,
-        'Diabetes with complications': 2,
-        'Hemi- or paraplegia': 2,
-        'Renal disease moderate/severe': 2,
-        'Any malignancy': 2,
-        'Moderate/severe liver disease': 3,
-        'Metastatic solid tumor': 6,
-        'AIDS/HIV': 6
-    },
-    'Updated': {
-        'Myocardial infarction': 0,
-        'Congestive heart failure': 2,
-        'Peripheral vascular disease': 0,
-        'Cerebrovascular disease': 0,
-        'Dementia': 2,
-        'Chronic pulmonary disease': 1,
-        'Rheumatic disease': 1,
-        'Peptic ulcer disease': 0,
-        'Mild liver disease': 2,
-        'Diabetes without complications': 0,
-        'Diabetes with complications': 1,
-        'Hemi- or paraplegia': 2,
-        'Renal disease moderate/severe': 1,
-        'Any malignancy': 2,
-        'Moderate/severe liver disease': 4,
-        'Metastatic solid tumor': 6,
-        'AIDS/HIV': 4
-    }
-}
-
-# --- ИЕРАРХИЯ CHARLSON ---
-CHARLSON_HIERARCHY: List[Tuple[str, str]] = [
-    ('Diabetes without complications', 'Diabetes with complications'),
-    # Если есть метастатическая опухоль, то "Any malignancy" всё равно остаётся
-    # (это две разные категории, они не исключают друг друга)
-]
 
 def evaluate_charlson(icd_codes_text: str) -> Dict[str, int]:
     """
     Оценивает пациента по всем 17 категориям Charlson.
-    
-    Args:
-        icd_codes_text: Строка с кодами МКБ-10
-    
-    Returns:
-        Словарь с результатами для каждой категории
     """
     patient_codes = parse_icd_codes(icd_codes_text)
     if not patient_codes:
@@ -89,21 +35,85 @@ def evaluate_charlson(icd_codes_text: str) -> Dict[str, int]:
     for category, codes in CHARLSON_MAPPINGS.items():
         results[category] = has_condition(patient_codes, codes)
     
-    # Применяем иерархию
-    for mild, severe in CHARLSON_HIERARCHY:
-        if results.get(severe, 0) == 1:
-            results[mild] = 0
-    
     return results
+
 
 def calculate_charlson_scores(results: Dict[str, int]) -> Dict[str, int]:
     """
     Рассчитывает оригинальный и обновлённый баллы Charlson.
+    Полностью соответствует формулам из Excel.
     """
-    original = sum(results.get(cat, 0) * CHARLSON_WEIGHTS['Original'].get(cat, 0) 
-                   for cat in CHARLSON_MAPPINGS.keys())
-    updated = sum(results.get(cat, 0) * CHARLSON_WEIGHTS['Updated'].get(cat, 0) 
-                  for cat in CHARLSON_MAPPINGS.keys())
+    
+    # Извлекаем значения для удобства
+    MI = results.get('Myocardial infarction', 0)
+    CHF = results.get('Congestive heart failure', 0)
+    PVD = results.get('Peripheral vascular disease', 0)
+    CVD = results.get('Cerebrovascular disease', 0)
+    DEM = results.get('Dementia', 0)
+    COPD = results.get('Chronic pulmonary disease', 0)
+    RHEUM = results.get('Rheumatic disease', 0)
+    PUD = results.get('Peptic ulcer disease', 0)
+    MILD_LIVER = results.get('Mild liver disease', 0)
+    DIAB_U = results.get('Diabetes without complications', 0)
+    DIAB_C = results.get('Diabetes with complications', 0)
+    HEMI = results.get('Hemi- or paraplegia', 0)
+    RENAL = results.get('Renal disease moderate/severe', 0)
+    ANY_MAL = results.get('Any malignancy', 0)
+    SEV_LIVER = results.get('Moderate/severe liver disease', 0)
+    METS = results.get('Metastatic solid tumor', 0)
+    AIDS = results.get('AIDS/HIV', 0)
+    
+    # --- Original Charlson weight score (полное соответствие Excel) ---
+    # Формула из Excel:
+    # =(C2*1)+(D2*1)+(E2*1)+(F2*1)+(G2*1)+(H2*1)+(I2*1)+(J2*1)+
+    #  IF(Q2=0,K2*1,0)+IF(M2=0,L2*1,0)+(M2*2)+(N2*2)+(O2*2)+
+    #  IF(R2=0,P2*2,0)+(Q2*3)+(R2*6)+(S2*6)
+    
+    original = (
+        MI * 1 +
+        CHF * 1 +
+        PVD * 1 +
+        CVD * 1 +
+        DEM * 1 +
+        COPD * 1 +
+        RHEUM * 1 +
+        PUD * 1 +
+        (MILD_LIVER * 1 if SEV_LIVER == 0 else 0) +
+        (DIAB_U * 1 if DIAB_C == 0 else 0) +
+        DIAB_C * 2 +
+        HEMI * 2 +
+        RENAL * 2 +
+        (ANY_MAL * 2 if METS == 0 else 0) +
+        SEV_LIVER * 3 +
+        METS * 6 +
+        AIDS * 6
+    )
+    
+    # --- Updated Charlson weight score (полное соответствие Excel) ---
+    # Формула из Excel:
+    # =(C2*0)+(D2*2)+(E2*0)+(F2*0)+(G2*2)+(H2*1)+(I2*1)+(J2*0)+
+    #  IF(Q2=0,K2*2,0)+IF(M2=0,L2*0,0)+(M2*1)+(N2*2)+(O2*1)+
+    #  IF(R2=0,P2*2,0)+(Q2*4)+(R2*6)+(S2*4)
+    
+    updated = (
+        MI * 0 +
+        CHF * 2 +
+        PVD * 0 +
+        CVD * 0 +
+        DEM * 2 +
+        COPD * 1 +
+        RHEUM * 1 +
+        PUD * 0 +
+        (MILD_LIVER * 2 if SEV_LIVER == 0 else 0) +
+        (DIAB_U * 0 if DIAB_C == 0 else 0) +
+        DIAB_C * 1 +
+        HEMI * 2 +
+        RENAL * 1 +
+        (ANY_MAL * 2 if METS == 0 else 0) +
+        SEV_LIVER * 4 +
+        METS * 6 +
+        AIDS * 4
+    )
     
     return {
         'Original Charlson': original,

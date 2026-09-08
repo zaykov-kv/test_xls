@@ -1,4 +1,3 @@
-# elixhauser.py
 from typing import Dict, List
 from icd_parser import parse_icd_codes, has_condition
 
@@ -37,85 +36,10 @@ ELIXHAUSER_MAPPINGS: Dict[str, List[str]] = {
     'Depression': ['F20.4', 'F31.3', 'F31.4', 'F31.5', 'F32', 'F33', 'F34.1', 'F41.2', 'F43.2']
 }
 
-# --- ВЕСА ДЛЯ ELIXHAUSER ---
-ELIXHAUSER_WEIGHTS = {
-    'AHRQ': {
-        'Congestive heart failure': 9,
-        'Cardiac arrhythmias': 0,
-        'Valvular disease': 0,
-        'Pulmonary circulation disorders': 6,
-        'Peripheral vascular disorders': 3,
-        'Hypertension, uncomplicated': -1,
-        'Hypertension, complicated': -1,
-        'Paralysis': 5,
-        'Other neurological disorders': 5,
-        'Chronic pulmonary disease': 3,
-        'Diabetes, uncomplicated': 0,
-        'Diabetes, complicated': -3,
-        'Hypothyroidism': 0,
-        'Renal failure': 6,
-        'Liver disease': 4,
-        'Peptic ulcer disease excluding bleeding': 0,
-        'AIDS/HIV': 0,
-        'Lymphoma': 6,
-        'Metastatic cancer': 14,
-        'Solid tumor without metastasis': 7,
-        'Rheumatoid arthritis/collagen vascular diseases': 0,
-        'Coagulopathy': 11,
-        'Obesity': -5,
-        'Weight loss': 9,
-        'Fluid and electrolyte disorders': 11,
-        'Blood loss anemia': -3,
-        'Deficiency anemia': -2,
-        'Alcohol abuse': -1,
-        'Drug abuse': -7,
-        'Psychoses': -5,
-        'Depression': -5
-    },
-    'van Walraven': {
-        'Congestive heart failure': 7,
-        'Cardiac arrhythmias': 5,
-        'Valvular disease': -1,
-        'Pulmonary circulation disorders': 4,
-        'Peripheral vascular disorders': 2,
-        'Hypertension, uncomplicated': 0,
-        'Hypertension, complicated': 0,
-        'Paralysis': 7,
-        'Other neurological disorders': 6,
-        'Chronic pulmonary disease': 3,
-        'Diabetes, uncomplicated': 0,
-        'Diabetes, complicated': 0,
-        'Hypothyroidism': 0,
-        'Renal failure': 5,
-        'Liver disease': 11,
-        'Peptic ulcer disease excluding bleeding': 0,
-        'AIDS/HIV': 0,
-        'Lymphoma': 9,
-        'Metastatic cancer': 12,
-        'Solid tumor without metastasis': 4,
-        'Rheumatoid arthritis/collagen vascular diseases': 0,
-        'Coagulopathy': 3,
-        'Obesity': -4,
-        'Weight loss': 6,
-        'Fluid and electrolyte disorders': 5,
-        'Blood loss anemia': -2,
-        'Deficiency anemia': -2,
-        'Alcohol abuse': 0,
-        'Drug abuse': -7,
-        'Psychoses': 0,
-        'Depression': -3
-    }
-}
 
 def evaluate_elixhauser(icd_codes_text: str) -> Dict[str, int]:
     """
     Оценивает пациента по всем 31 категории Elixhauser.
-    
-    Args:
-        icd_codes_text: Строка с кодами МКБ-10
-    
-    Returns:
-        Словарь с результатами для каждой категории
     """
     patient_codes = parse_icd_codes(icd_codes_text)
     if not patient_codes:
@@ -127,20 +51,133 @@ def evaluate_elixhauser(icd_codes_text: str) -> Dict[str, int]:
     
     return results
 
+
 def calculate_elixhauser_scores(results: Dict[str, int]) -> Dict[str, int]:
     """
-    Рассчитывает AHRQ и van Walraven баллы Elixhauser.
-    
-    Args:
-        results: Словарь с результатами для каждой категории
-    
-    Returns:
-        Словарь с баллами AHRQ и van Walraven
+    Рассчитывает AHRQ и van Walraven баллы Elixhauser с полной условной логикой.
+    Полностью соответствует формулам из Excel.
     """
-    ahrq = sum(results.get(cat, 0) * ELIXHAUSER_WEIGHTS['AHRQ'].get(cat, 0) 
-               for cat in ELIXHAUSER_MAPPINGS.keys())
-    van_walraven = sum(results.get(cat, 0) * ELIXHAUSER_WEIGHTS['van Walraven'].get(cat, 0) 
-                       for cat in ELIXHAUSER_MAPPINGS.keys())
+    
+    # Извлекаем значения для удобства
+    CHF = results.get('Congestive heart failure', 0)
+    ARR = results.get('Cardiac arrhythmias', 0)
+    VALV = results.get('Valvular disease', 0)
+    PULM = results.get('Pulmonary circulation disorders', 0)
+    PERI = results.get('Peripheral vascular disorders', 0)
+    HTN_U = results.get('Hypertension, uncomplicated', 0)
+    HTN_C = results.get('Hypertension, complicated', 0)
+    PARA = results.get('Paralysis', 0)
+    NEURO = results.get('Other neurological disorders', 0)
+    COPD = results.get('Chronic pulmonary disease', 0)
+    DIAB_U = results.get('Diabetes, uncomplicated', 0)
+    DIAB_C = results.get('Diabetes, complicated', 0)
+    HYPO = results.get('Hypothyroidism', 0)
+    RENAL = results.get('Renal failure', 0)
+    LIVER = results.get('Liver disease', 0)
+    ULCER = results.get('Peptic ulcer disease excluding bleeding', 0)
+    AIDS = results.get('AIDS/HIV', 0)
+    LYMPH = results.get('Lymphoma', 0)
+    METS = results.get('Metastatic cancer', 0)
+    TUMOR = results.get('Solid tumor without metastasis', 0)
+    RHEUM = results.get('Rheumatoid arthritis/collagen vascular diseases', 0)
+    COAG = results.get('Coagulopathy', 0)
+    OBES = results.get('Obesity', 0)
+    WEIGHT = results.get('Weight loss', 0)
+    FLUID = results.get('Fluid and electrolyte disorders', 0)
+    BLOOD = results.get('Blood loss anemia', 0)
+    ANEMIA = results.get('Deficiency anemia', 0)
+    ALC = results.get('Alcohol abuse', 0)
+    DRUG = results.get('Drug abuse', 0)
+    PSYCH = results.get('Psychoses', 0)
+    DEPR = results.get('Depression', 0)
+    
+    # --- AHRQ Elixhauser score (полное соответствие Excel) ---
+    # Формула из Excel:
+    # =(C2*9)+(D2*0)+(E2*0)+(F2*6)+(G2*3)+
+    #  IF(I2=0,H2*-1,0)+(I2*-1)+
+    #  (J2*5)+(K2*5)+(L2*3)+
+    #  IF(N2=0,M2*0,0)+(N2*-3)+
+    #  (O2*0)+(P2*6)+(Q2*4)+(R2*0)+(S2*0)+(T2*6)+
+    #  (U2*14)+IF(U2=0,V2*7,0)+(W2*0)+
+    #  (X2*11)+(Y2*-5)+(Z2*9)+(AA2*11)+(AB2*-3)+(AC2*-2)+(AD2*-1)+(AE2*-7)+(AF2*-5)+(AG2*-5)
+    
+    ahrq = (
+        CHF * 9 +
+        ARR * 0 +
+        VALV * 0 +
+        PULM * 6 +
+        PERI * 3 +
+        (HTN_U * -1 if HTN_C == 0 else 0) +
+        HTN_C * -1 +
+        PARA * 5 +
+        NEURO * 5 +
+        COPD * 3 +
+        (DIAB_U * 0 if DIAB_C == 0 else 0) +
+        DIAB_C * -3 +
+        HYPO * 0 +
+        RENAL * 6 +
+        LIVER * 4 +
+        ULCER * 0 +
+        AIDS * 0 +
+        LYMPH * 6 +
+        METS * 14 +
+        TUMOR * 7 +
+        RHEUM * 0 +
+        COAG * 11 +
+        OBES * -5 +
+        WEIGHT * 9 +
+        FLUID * 11 +
+        BLOOD * -3 +
+        ANEMIA * -2 +
+        ALC * -1 +
+        DRUG * -7 +
+        PSYCH * -5 +
+        DEPR * -5
+    )
+    
+    # --- van Walraven Elixhauser score (полное соответствие Excel) ---
+    # Формула из Excel:
+    # =(C2*7)+(D2*5)+(E2*-1)+(F2*4)+(G2*2)+
+    #  IF(I2=0,H2*0)+(I2*0)+
+    #  (J2*7)+(K2*6)+(L2*3)+
+    #  IF(N2=0,M2*0,0)+(N2*0)+
+    #  (O2*0)+(P2*5)+(Q2*11)+(R2*0)+(S2*0)+
+    #  (T2*9)+(U2*12)+IF(U2=0,V2*4,0)+(W2*0)+
+    #  (X2*3)+(Y2*-4)+(Z2*6)+(AA2*5)+(AB2*-2)+(AC2*-2)+(AD2*0)+(AE2*-7)+(AF2*0)+(AG2*-3)
+    
+    van_walraven = (
+        CHF * 7 +
+        ARR * 5 +
+        VALV * -1 +
+        PULM * 4 +
+        PERI * 2 +
+        (HTN_U * 0 if HTN_C == 0 else 0) +
+        HTN_C * 0 +
+        PARA * 7 +
+        NEURO * 6 +
+        COPD * 3 +
+        (DIAB_U * 0 if DIAB_C == 0 else 0) +
+        DIAB_C * 0 +
+        HYPO * 0 +
+        RENAL * 5 +
+        LIVER * 11 +
+        ULCER * 0 +
+        AIDS * 0 +
+        LYMPH * 9 +
+        METS * 12 +
+        TUMOR * 4 +
+        RHEUM * 0 +
+        COAG * 3 +
+        OBES * -4 +
+        WEIGHT * 6 +
+        FLUID * 5 +
+        BLOOD * -2 +
+        ANEMIA * -2 +
+        ALC * 0 +
+        DRUG * -7 +
+        PSYCH * 0 +
+        DEPR * -3
+    )
     
     return {
         'AHRQ Elixhauser': ahrq,
