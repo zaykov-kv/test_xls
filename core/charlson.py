@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from icd_parser import parse_icd_codes, has_condition
+from core.icd_parser import parse_icd_codes, has_condition
 
 # --- СПРАВОЧНИК КОДОВ ДЛЯ CHARLSON (все 17 категорий) ---
 CHARLSON_MAPPINGS: Dict[str, List[str]] = {

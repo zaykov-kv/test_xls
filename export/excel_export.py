@@ -4,8 +4,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 import io
 from datetime import datetime
-from charlson import CHARLSON_MAPPINGS
-from elixhauser import ELIXHAUSER_MAPPINGS
+from core.charlson import CHARLSON_MAPPINGS
+from core.elixhauser import ELIXHAUSER_MAPPINGS
 
 
 def export_to_excel(df, filename="comorbidity_results.xlsx"):

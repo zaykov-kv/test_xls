@@ -10,7 +10,7 @@ import tempfile
 import os
 from datetime import datetime
 import pandas as pd
-from charlson import CHARLSON_MAPPINGS
+from core.charlson import CHARLSON_MAPPINGS
 
 
 def generate_pdf_report(df, filename="comorbidity_report.pdf"):

@@ -1,5 +1,5 @@
 from typing import Dict, List
-from icd_parser import parse_icd_codes, has_condition
+from core.icd_parser import parse_icd_codes, has_condition
 
 # --- СПРАВОЧНИК КОДОВ ДЛЯ ELIXHAUSER (все 31 категория) ---
 ELIXHAUSER_MAPPINGS: Dict[str, List[str]] = {

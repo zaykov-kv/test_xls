@@ -1,11 +1,17 @@
+"""
+Обработка загруженных данных и расчёт индексов.
+"""
+
 import pandas as pd
 import streamlit as st
-from charlson import evaluate_charlson, calculate_charlson_scores
-from elixhauser import evaluate_elixhauser, calculate_elixhauser_scores
-from utils import add_risk_zones
+from processing.analysis import calculate_patients
+from core.utils import add_risk_zones
 
 
 def process_uploaded_files(uploaded_files):
+    """
+    Обрабатывает загруженные файлы и возвращает результаты.
+    """
     all_results = {}
     combined_results = []
     
@@ -49,6 +55,7 @@ def process_uploaded_files(uploaded_files):
 
 
 def validate_file(df, filename):
+    """Проверяет, что файл имеет правильный формат."""
     if df.empty:
         return False, f"⚠️ Файл '{filename}' пуст, пропускаем"
     if len(df.columns) < 2:
@@ -57,6 +64,7 @@ def validate_file(df, filename):
 
 
 def prepare_dataframe(df):
+    """Подготавливает DataFrame для анализа."""
     df = df.iloc[:, :2]
     df.columns = ['Patient_ID', 'ICD_codes']
     df['Patient_ID'] = df['Patient_ID'].astype(str)
@@ -67,31 +75,8 @@ def prepare_dataframe(df):
     return df
 
 
-def calculate_patients(df, source_file):
-    results = []
-    for _, row in df.iterrows():
-        icd_codes = row['ICD_codes']
-        
-        charlson_cats = evaluate_charlson(icd_codes)
-        charlson_scores = calculate_charlson_scores(charlson_cats)
-        
-        elixhauser_cats = evaluate_elixhauser(icd_codes)
-        elixhauser_scores = calculate_elixhauser_scores(elixhauser_cats)
-        
-        results.append({
-            'Source_File': source_file,
-            'Patient_ID': row['Patient_ID'],
-            'ICD_codes': icd_codes,
-            **charlson_cats,
-            **charlson_scores,
-            **elixhauser_cats,
-            **elixhauser_scores
-        })
-    
-    return results
-
-
 def get_file_summary(all_results):
+    """Создаёт сводку по всем загруженным файлам."""
     file_info = []
     for filename, df in all_results.items():
         file_info.append({
@@ -104,6 +89,7 @@ def get_file_summary(all_results):
 
 
 def get_comparison_stats(filtered_df):
+    """Рассчитывает сравнительную статистику по файлам."""
     comparison_df = filtered_df.groupby('Source_File').agg({
         'Patient_ID': 'count',
         'Updated Charlson': ['mean', 'median', 'min', 'max'],

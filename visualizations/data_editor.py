@@ -148,7 +148,8 @@ def render_raw_data(all_results, combined_df):
                         all_results[selected_file] = file_df
                         
                         with st.spinner("⏳ Пересчёт данных..."):
-                            from analysis import calculate_patients, add_risk_zones
+                            from processing.analysis import calculate_patients
+                            from core.utils import add_risk_zones
                             
                             calc_df = file_df[['Patient_ID', 'ICD_codes']].copy()
                             new_results = calculate_patients(calc_df, selected_file)

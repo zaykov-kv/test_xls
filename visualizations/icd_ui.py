@@ -1,5 +1,5 @@
 import streamlit as st
-from icd_api import get_icd10_code_details
+from core.icd_api import get_icd10_code_details
 
 
 def render_code_validation(all_results):

@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from charlson import CHARLSON_MAPPINGS
-from elixhauser import ELIXHAUSER_MAPPINGS
+from core.charlson import CHARLSON_MAPPINGS
+from core.elixhauser import ELIXHAUSER_MAPPINGS
 
 def add_risk_zones(df):
     """

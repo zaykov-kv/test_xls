@@ -1,6 +1,6 @@
 import streamlit as st
-from analysis import get_comparison_stats
-from utils import style_dataframe
+from processing.data_processor import get_comparison_stats
+from core.utils import style_dataframe
 from visualizations.utils import normalize_column_names
 
 

@@ -3,9 +3,8 @@ import pandas as pd
 from datetime import datetime
 
 # Импорты из модулей
-from charlson import CHARLSON_MAPPINGS
-from elixhauser import ELIXHAUSER_MAPPINGS
-from analysis import process_uploaded_files
+from core import CHARLSON_MAPPINGS, ELIXHAUSER_MAPPINGS
+from processing.data_processor import process_uploaded_files
 from visualizations import (
     render_file_info,
     render_raw_data,
@@ -18,8 +17,7 @@ from visualizations import (
     render_database_interface,
     render_loaded_data
 )
-from excel_export import export_to_excel
-from pdf_report import generate_pdf_report
+from export import export_to_excel, generate_pdf_report
 
 # --- НАСТРОЙКА СТРАНИЦЫ ---
 st.set_page_config(

@@ -1,5 +1,5 @@
 import streamlit as st
-from analysis import get_file_summary
+from processing.data_processor import get_file_summary
 from visualizations.utils import normalize_column_names
 
 

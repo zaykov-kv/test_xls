@@ -1,14 +1,19 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from database_supabase import SupabaseManager
+from database.supabase_queries import (
+    save_session,
+    get_sessions,
+    get_session_data,
+    delete_session,
+    search_patients
+)
 from visualizations.utils import format_datetime
 
 
 def render_database_interface():
     """Отображает интерфейс для работы с базой данных."""
     with st.expander("💾 Сохранение и загрузка данных (База данных)", expanded=False):
-        db = SupabaseManager()
         
         tab1, tab2, tab3, tab4 = st.tabs([
             "💾 Сохранить текущие данные",
@@ -49,9 +54,12 @@ def render_database_interface():
                         if st.button("💾 Сохранить в базу данных", use_container_width=True, type="primary"):
                             with st.spinner("⏳ Сохранение данных..."):
                                 try:
-                                    session_id = db.save_session(combined_df, save_name)
-                                    st.success(f"✅ Данные сохранены! ID сессии: {session_id}")
-                                    st.balloons()
+                                    session_id = save_session(combined_df, save_name)
+                                    if session_id:
+                                        st.success(f"✅ Данные сохранены! ID сессии: {session_id}")
+                                        st.balloons()
+                                    else:
+                                        st.error("❌ Ошибка при сохранении")
                                 except Exception as e:
                                     st.error(f"❌ Ошибка при сохранении: {str(e)}")
                     
@@ -62,7 +70,7 @@ def render_database_interface():
             st.markdown("**Загрузить ранее сохранённые данные**")
             
             with st.spinner("⏳ Загрузка списка сессий..."):
-                sessions = db.get_sessions(limit=20)
+                sessions = get_sessions(limit=20)
             
             if sessions.empty:
                 st.warning("Нет сохранённых сессий в базе данных")
@@ -90,7 +98,7 @@ def render_database_interface():
                     with col1:
                         if st.button("📂 Загрузить данные", use_container_width=True, type="primary"):
                             with st.spinner("⏳ Загрузка данных..."):
-                                df = db.get_session_data(session_id)
+                                df = get_session_data(session_id)
                                 if df is not None and not df.empty:
                                     st.session_state.combined_df = df
                                     st.session_state.all_results = {'loaded_from_db': df}
@@ -103,7 +111,7 @@ def render_database_interface():
                     
                     with col2:
                         if st.button("🗑️ Удалить сессию", use_container_width=True):
-                            if db.delete_session(session_id):
+                            if delete_session(session_id):
                                 st.success("✅ Сессия удалена")
                                 st.rerun()
                             else:
@@ -121,7 +129,7 @@ def render_database_interface():
             st.markdown("**📊 История сессий**")
             
             limit = st.slider("Количество сессий для отображения:", 5, 100, 20, key="history_limit")
-            sessions = db.get_sessions(limit=limit)
+            sessions = get_sessions(limit=limit)
             
             if sessions.empty:
                 st.info("Нет сохранённых сессий")
@@ -164,7 +172,7 @@ def render_database_interface():
             
             if search_term and len(search_term.strip()) >= 2:
                 with st.spinner("⏳ Поиск..."):
-                    results = db.search_patients(search_term)
+                    results = search_patients(search_term)
                     
                     if results.empty:
                         st.info("Ничего не найдено. Попробуйте изменить запрос.")
@@ -200,7 +208,7 @@ def render_database_interface():
                                 session_ids = results['session_id'].unique()
                                 
                                 for session_id in session_ids:
-                                    full_session_data = db.get_session_data(session_id)
+                                    full_session_data = get_session_data(session_id)
                                     if full_session_data is not None and not full_session_data.empty:
                                         patient_ids = results[results['session_id'] == session_id]['patient_id_text'].tolist()
                                         filtered_patients = full_session_data[full_session_data['Patient_ID'].isin(patient_ids)]

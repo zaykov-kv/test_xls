@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from charlson import CHARLSON_MAPPINGS
-from elixhauser import ELIXHAUSER_MAPPINGS
-from utils import create_comorbidity_heatmap, get_top_diseases, get_top_comorbidity_pairs
+from core.charlson import CHARLSON_MAPPINGS
+from core.elixhauser import ELIXHAUSER_MAPPINGS
+from core.utils import create_comorbidity_heatmap, get_top_diseases, get_top_comorbidity_pairs
 from visualizations.utils import normalize_column_names
 
 
