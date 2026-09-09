@@ -5,9 +5,13 @@ import html
 from core.icd_api import get_icd10_code_details, search_icd10_by_name, token_manager
 
 
-def render_code_validation(all_results=None):
+def render_code_validation(all_results=None, suffix=""):
     """
     Поиск информации о коде МКБ-10.
+    
+    Args:
+        all_results: Результаты расчёта (не используется)
+        suffix: Суффикс для ключей (чтобы избежать дублирования)
     """
     with st.expander("🔍 Проверка кода МКБ-10", expanded=False):
         st.markdown("**Поиск информации о коде МКБ-10**")
@@ -27,11 +31,16 @@ def render_code_validation(all_results=None):
                     "Введите код МКБ-10:",
                     placeholder="Например: E11.9, I10, C50",
                     label_visibility="collapsed",
-                    key="icd_code_search"
+                    key=f"icd_code_search{suffix}"
                 )
             
             with col2:
-                search_code_btn = st.button("🔍 Найти код", use_container_width=True, type="primary", key="search_code_btn")
+                search_code_btn = st.button(
+                    "🔍 Найти код",
+                    use_container_width=True,
+                    type="primary",
+                    key=f"search_code_btn{suffix}"
+                )
             
             if search_code_btn and icd_code:
                 with st.spinner("⏳ Поиск кода..."):
@@ -68,7 +77,7 @@ def render_code_validation(all_results=None):
                 search_name = st.text_input(
                     "Введите название:",
                     placeholder="Например: diabetes, heart failure, asthma",
-                    key="icd_name_search"
+                    key=f"icd_name_search{suffix}"
                 )
             
             with col2:
@@ -76,12 +85,17 @@ def render_code_validation(all_results=None):
                 max_results = st.selectbox(
                     "Количество результатов:",
                     options=[10, 20, 30, 50],
-                    index=0,  # По умолчанию 30
-                    key="max_results_select"
+                    index=0,
+                    key=f"max_results_select{suffix}"
                 )
             
             # Кнопка поиска
-            search_name_btn = st.button("🔍 Найти по названию", use_container_width=True, type="primary", key="search_name_btn")
+            search_name_btn = st.button(
+                "🔍 Найти по названию",
+                use_container_width=True,
+                type="primary",
+                key=f"search_name_btn{suffix}"
+            )
             
             if search_name_btn and search_name:
                 with st.spinner(f"⏳ Поиск (до {max_results} результатов)..."):

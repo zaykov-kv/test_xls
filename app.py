@@ -30,7 +30,6 @@ st.set_page_config(
 if 'theme' not in st.session_state:
     st.session_state.theme = 'light'
 
-# Переключатель в боковой панели
 with st.sidebar:
     theme_toggle = st.toggle(
         "🌙 Тёмная тема", 
@@ -43,7 +42,6 @@ with st.sidebar:
     else:
         st.session_state.theme = 'light'
 
-# Применяем CSS для тёмной темы
 if st.session_state.theme == 'dark':
     st.markdown("""
     <style>
@@ -114,57 +112,42 @@ render_database_interface()
 
 
 # =============================================================================
-# ПРОВЕРКА КОДОВ МКБ-10 (ВСЕГДА ДОСТУПНА)  ← ПЕРЕМЕЩЕНО СЮДА
+# ПРОВЕРКА КОДОВ МКБ-10 (ВСЕГДА ДОСТУПНА)
 # =============================================================================
 
 st.markdown("---")
-render_code_validation({})
+render_code_validation({}, suffix="_main")
 
 
 # =============================================================================
-# ЗАГРУЗКА ФАЙЛА
+# ЗАГРУЗКА НОВЫХ ДАННЫХ
 # =============================================================================
 
 st.markdown("---")
 st.subheader("📂 Загрузка новых данных")
 
-uploaded_files = st.file_uploader(
-    "Загрузите один или несколько Excel-файлов",
-    type=['xlsx', 'xls'],
-    accept_multiple_files=True,
-    help="Файлы должны содержать минимум 2 колонки: ID пациента и коды МКБ-10"
-)
+from processing.file_loader import render_upload_section
+
+result = render_upload_section()
+
+if result:
+    all_results, combined_results = result
+    
+    if all_results:
+        st.session_state.all_results = all_results
+        st.session_state.combined_df = pd.concat(combined_results, ignore_index=True)
+        st.session_state.uploaded_files_processed = True
+        st.session_state.data_source = 'file'
+        st.success(f"✅ Загружено {len(all_results)} файлов, всего пациентов: {len(st.session_state.combined_df)}")
+        st.rerun()
+    else:
+        st.warning("⚠️ Нет файлов для обработки")
 
 
 # =============================================================================
-# ОСНОВНАЯ ЛОГИКА
+# ОСНОВНАЯ ЛОГИКА (ОТОБРАЖЕНИЕ ДАННЫХ)
 # =============================================================================
 
-if uploaded_files:
-    process_new_files = True
-    
-    if st.session_state.uploaded_files_processed:
-        current_names = [f.name for f in uploaded_files]
-        session_names = list(st.session_state.all_results.keys()) if st.session_state.all_results else []
-        if current_names == session_names:
-            process_new_files = False
-    
-    if process_new_files:
-        with st.spinner("⏳ Обработка файлов..."):
-            all_results, combined_results = process_uploaded_files(uploaded_files)
-        
-        if all_results:
-            st.session_state.all_results = all_results
-            st.session_state.combined_df = pd.concat(combined_results, ignore_index=True)
-            st.session_state.uploaded_files_processed = True
-            st.session_state.data_source = 'file'
-            st.success(f"✅ Загружено {len(all_results)} файлов, всего пациентов: {len(st.session_state.combined_df)}")
-            st.rerun()
-        else:
-            st.warning("⚠️ Нет файлов для обработки")
-            st.stop()
-
-# --- ПРОВЕРКА НАЛИЧИЯ ДАННЫХ ---
 has_data = (
     st.session_state.combined_df is not None and 
     not st.session_state.combined_df.empty
@@ -208,8 +191,7 @@ if has_data:
     if data_source == 'file':
         render_file_info(st.session_state.all_results)
     
-    # Проверка кодов МКБ-10 (для загруженных данных)
-    render_code_validation(st.session_state.all_results)  # ← ОСТАВЛЯЕМ ДЛЯ РАБОТЫ С ДАННЫМИ
+    render_code_validation(st.session_state.all_results, suffix="_data")
     
     st.session_state.combined_df = render_raw_data(
         st.session_state.all_results, 
