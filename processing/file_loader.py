@@ -19,6 +19,7 @@ def get_upload_settings() -> Dict:
     st.markdown("**⚙️ Настройки загрузки**")
     st.caption("💡 Настройте параметры, затем выберите файлы и нажмите 'Загрузить'")
     
+    # --- НАСТРОЙКИ БЕЗ ФОРМЫ (сразу применяются) ---
     col1, col2 = st.columns(2)
     
     with col1:
@@ -29,23 +30,25 @@ def get_upload_settings() -> Dict:
             help="Выберите формат загружаемого файла",
             key="file_type_select"
         )
-        st.session_state.file_type_state = file_type
+        # Сохраняем в session_state при каждом изменении
+        if st.session_state.file_type_state != file_type:
+            st.session_state.file_type_state = file_type
+            st.rerun()
     
     with col2:
-        if file_type == "CSV (.csv)":
-            encoding = st.selectbox(
-                "Кодировка:",
-                options=["utf-8", "cp1251", "latin1", "iso-8859-1"],
-                index=0,
-                help="Выберите кодировку CSV-файла"
-            )
-        else:
-            encoding = "utf-8"
-            st.info("💡 Кодировка применяется только для CSV-файлов")
+        # Кодировка всегда видна, но активна только для CSV
+        encoding = st.selectbox(
+            "Кодировка:",
+            options=["utf-8", "cp1251", "latin1", "iso-8859-1"],
+            index=0,
+            help="Выберите кодировку (для CSV-файлов)",
+            disabled=(file_type != "CSV (.csv)")
+        )
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        # Номер листа всегда виден, но активен только для Excel
         sheet_name = st.number_input(
             "Номер листа (Excel):",
             min_value=1,
@@ -53,7 +56,7 @@ def get_upload_settings() -> Dict:
             value=1,
             step=1,
             help="Номер листа в Excel-файле (1 = первый лист)",
-            disabled=(file_type == "CSV (.csv)")
+            disabled=(file_type != "Excel (.xlsx, .xls)")
         )
     
     with col2:
@@ -86,14 +89,44 @@ def get_upload_settings() -> Dict:
             help="Строка, с которой начинаются данные (1 = первая строка)"
         )
     
-    return {
-        "file_type": file_type,
-        "encoding": encoding,
-        "sheet_name": sheet_name,
-        "id_col": id_col,
-        "icd_col": icd_col,
-        "start_row": start_row
-    }
+    # --- ФОРМА ДЛЯ ЗАГРУЗКИ ФАЙЛОВ ---
+    st.markdown("---")
+    st.markdown("**📁 Выберите файлы для загрузки**")
+    
+    with st.form(key="upload_form"):
+        uploaded_files = st.file_uploader(
+            "Загрузите один или несколько файлов",
+            type=['xlsx', 'xls', 'csv'],
+            accept_multiple_files=True,
+            help="Файлы должны содержать минимум 2 колонки: ID пациента и коды МКБ-10",
+            label_visibility="collapsed"
+        )
+        
+        # Кнопка отправки формы
+        submitted = st.form_submit_button(
+            "📤 Загрузить и обработать",
+            use_container_width=True,
+            type="primary"
+        )
+    
+    # Если форма отправлена, обрабатываем файлы с текущими настройками
+    if submitted and uploaded_files:
+        settings = {
+            "file_type": file_type,
+            "encoding": encoding,
+            "sheet_name": sheet_name,
+            "id_col": id_col,
+            "icd_col": icd_col,
+            "start_row": start_row
+        }
+        result = load_and_process_files(uploaded_files, settings)
+        if result:
+            return result
+    
+    elif submitted and not uploaded_files:
+        st.warning("⚠️ Выберите хотя бы один файл для загрузки")
+    
+    return None
 
 
 def load_and_process_files(
@@ -102,13 +135,6 @@ def load_and_process_files(
 ) -> Tuple[Dict, List]:
     """
     Загружает и обрабатывает файлы с заданными настройками.
-    
-    Args:
-        uploaded_files: Список загруженных файлов
-        settings: Словарь с настройками загрузки
-    
-    Returns:
-        Tuple[Dict, List]: (all_results, combined_results)
     """
     all_results = {}
     combined_results = []
@@ -181,44 +207,13 @@ def load_and_process_files(
     
     progress_bar.empty()
     
-    return all_results, combined_results
+    if all_results:
+        return all_results, combined_results
+    return None
 
 
 def render_upload_section() -> Optional[Tuple[Dict, List]]:
     """
     Отображает интерфейс загрузки и обрабатывает файлы.
-    
-    Returns:
-        Optional[Tuple[Dict, List]]: (all_results, combined_results) или None
     """
-    # --- ФОРМА ДЛЯ НАСТРОЕК И ЗАГРУЗКИ ---
-    with st.form(key="upload_form"):
-        settings = get_upload_settings()
-        
-        st.markdown("---")
-        st.markdown("**📁 Выберите файлы для загрузки**")
-        
-        uploaded_files = st.file_uploader(
-            "Загрузите один или несколько файлов",
-            type=['xlsx', 'xls', 'csv'],
-            accept_multiple_files=True,
-            help="Файлы должны содержать минимум 2 колонки: ID пациента и коды МКБ-10",
-            label_visibility="collapsed"
-        )
-        
-        # Кнопка отправки формы
-        submitted = st.form_submit_button(
-            "📤 Загрузить и обработать",
-            use_container_width=True,
-            type="primary"
-        )
-    
-    # --- ОБРАБОТКА ФАЙЛОВ ПОСЛЕ НАЖАТИЯ КНОПКИ ---
-    if submitted and uploaded_files:
-        with st.spinner("⏳ Обработка файлов..."):
-            return load_and_process_files(uploaded_files, settings)
-    
-    elif submitted and not uploaded_files:
-        st.warning("⚠️ Выберите хотя бы один файл для загрузки")
-    
-    return None
+    return get_upload_settings()
