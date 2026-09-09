@@ -26,6 +26,7 @@ def render_code_validation(all_results=None):
                 icd_code = st.text_input(
                     "Введите код МКБ-10:",
                     placeholder="Например: E11.9, I10, C50",
+                    label_visibility="collapsed",
                     key="icd_code_search"
                 )
             
@@ -58,9 +59,7 @@ def render_code_validation(all_results=None):
             
             # Проверяем статус WHO API
             token = token_manager.get_token()
-            if token:
-                st.success("✅ WHO API доступен")
-            else:
+            if not token:
                 st.warning("⚠️ WHO API недоступен. Проверьте секреты.")
             
             col1, col2 = st.columns([2, 1])
@@ -76,8 +75,8 @@ def render_code_validation(all_results=None):
                 # Выбор количества результатов
                 max_results = st.selectbox(
                     "Количество результатов:",
-                    options=[10, 20, 30, 50, 100],
-                    index=2,  # По умолчанию 30
+                    options=[10, 20, 30, 50],
+                    index=0,  # По умолчанию 30
                     key="max_results_select"
                 )
             
