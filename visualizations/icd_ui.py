@@ -12,7 +12,6 @@ def render_code_validation(all_results=None):
     with st.expander("🔍 Проверка кода МКБ-10", expanded=False):
         st.markdown("**Поиск информации о коде МКБ-10**")
         
-        # Создаем вкладки для двух типов поиска
         tab1, tab2 = st.tabs(["🔎 Поиск по коду", "🔍 Поиск по названию"])
         
         # ====================================================================
@@ -59,7 +58,9 @@ def render_code_validation(all_results=None):
             
             # Проверяем статус WHO API
             token = token_manager.get_token()
-            if not token:
+            if token:
+                st.success("✅ WHO API доступен")
+            else:
                 st.warning("⚠️ WHO API недоступен. Проверьте секреты.")
             
             col1, col2 = st.columns([2, 1])
@@ -72,11 +73,20 @@ def render_code_validation(all_results=None):
                 )
             
             with col2:
-                search_name_btn = st.button("🔍 Найти по названию", use_container_width=True, type="primary", key="search_name_btn")
+                # Выбор количества результатов
+                max_results = st.selectbox(
+                    "Количество результатов:",
+                    options=[10, 20, 30, 50, 100],
+                    index=2,  # По умолчанию 30
+                    key="max_results_select"
+                )
+            
+            # Кнопка поиска
+            search_name_btn = st.button("🔍 Найти по названию", use_container_width=True, type="primary", key="search_name_btn")
             
             if search_name_btn and search_name:
-                with st.spinner("⏳ Поиск по названию..."):
-                    results = search_icd10_by_name(search_name, max_results=20)
+                with st.spinner(f"⏳ Поиск (до {max_results} результатов)..."):
+                    results = search_icd10_by_name(search_name, max_results=max_results)
                     
                     if results:
                         st.success(f"✅ Найдено {len(results)} результатов")
@@ -84,11 +94,9 @@ def render_code_validation(all_results=None):
                         # Простой вывод в стиле Streamlit
                         for i, item in enumerate(results, 1):
                             desc = item.get('description', '')
-                            # Убираем HTML-теги на всякий случай
                             desc = re.sub(r'<[^>]+>', '', desc)
                             desc = html.unescape(desc)
                             
-                            # Выводим как обычный текст с номером
                             st.write(f"{i}. {desc}")
                     else:
                         st.warning(f"❌ По запросу '{search_name}' ничего не найдено")
